@@ -1,39 +1,52 @@
 #!flask/Source/python
-import mysql.connector
-from mysql.connector import errorcode
-from flask import Flask,jsonify
-def mysql_conn():
-    try:
-     connection = mysql.connector.connect(host = 'localhost',
-    	user='root',
-    	password='mkulimas',
-    	database='todo_list')
+from flask import Flask,jsonify,request
+from config import Config
 
-    except mysql.connector.Error as err:
-      if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print("Something is wrong with your user name or password")
-      elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print("Database does not exist")
-      else:
-        print(err)
-    
-    return connection
+config = Config()
+cursor =config.get_cursor()
+
 
 app = Flask('app')
 @app.route('/')
 def index():
-	return 'Hello world its feliciah'
+	return 'Hello world its feliciah';
+
+@app.errorhandler(404)
+def page_n0t_found(e):
+  result = {
+  "statusCode":404,
+  "status":"failed",
+  "message":"Url not found"
+
+  }
+  return jsonify(result)
+
+
 
 @app.route('/user',methods=['GET'])
 def get_users():
-  conn = mysql_conn()
-  cursor = conn.cursor()
+  
   cursor.execute("SELECT * FROM user")
   result = cursor.fetchall()
 
   return jsonify(result)
 
 
+@app.route('/register',methods=['POST'])
+def register_user():
+  result = request.get_json()
+
+  # Get data from the request object
+  name = result['name']
+  email = result['email']
+  password = result['password']
+
+  #insert data to the table
+  query = "INSERT INTO user VALUES (%s, %s, %s, %s,NOW())"
+  values = (3, name, email, password)
+  cursor.execute(query, values)
+
+  return jsonify(result)
 
 
 # app.run(debug=True, host='0.0.0.0', port=8080)
